@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model administrateurs {
+  Id     Int     @id @default(autoincrement())
+  Nom    String  @db.VarChar(60)
+  Prenom String  @db.VarChar(60)
+  Email  String  @unique(map: "Email") @db.VarChar(100)
+  Tel    String? @unique(map: "Tel") @db.VarChar(30)
+  Login  String  @unique(map: "Login") @db.VarChar(20)
+  Mdp    String  @db.VarChar(200)
+  image  String? @db.VarChar(200)
+}
+
+model annonce {
+  Id              Int             @id @default(autoincrement())
+  Titre           String          @db.VarChar(60)
+  Descriptionn    String          @db.VarChar(60)
+  DatePublication DateTime        @db.Date
+  Ville           String          @db.VarChar(60)
+  CategorieNom    String          @db.VarChar(60)
+  ProprietaireId  Int
+  categorie       categorie       @relation(fields: [CategorieNom], references: [Nom], onDelete: NoAction, onUpdate: NoAction, map: "annonce_ibfk_2")
+  utilisateurs    utilisateurs    @relation(fields: [ProprietaireId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "annonce_ibfk_1")
+  commentaires    commentaires[]
+  imagesannonce   imagesannonce[]
+  signalannonce   signalannonce[]
+
+  @@index([CategorieNom], map: "CategorieNom")
+  @@index([ProprietaireId], map: "ProprietaireId")
+}
+
+model categorie {
+  Id      Int       @id @default(autoincrement())
+  Nom     String    @unique(map: "Nom") @db.VarChar(60)
+  image   String?   @db.VarChar(200)
+  annonce annonce[]
+}
+
+model commentaires {
+  Id            Int           @id @default(autoincrement())
+  Contenu       String        @db.VarChar(200)
+  UtilisateurId Int?
+  AnnonceId     Int?
+  annonce       annonce?      @relation(fields: [AnnonceId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "commentaires_ibfk_2")
+  utilisateurs  utilisateurs? @relation(fields: [UtilisateurId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "commentaires_ibfk_1")
+
+  @@index([AnnonceId], map: "AnnonceId")
+  @@index([UtilisateurId], map: "UtilisateurId")
+}
+
+model imagesannonce {
+  Id        Int     @id @default(autoincrement())
+  image     String? @db.VarChar(200)
+  AnnonceId Int
+  annonce   annonce @relation(fields: [AnnonceId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "imagesannonce_ibfk_1")
+
+  @@index([AnnonceId], map: "AnnonceId")
+}
+
+model signalannonce {
+  SignaleurId       Int
+  AnnonceId         Int
+  DescriptionRaison String       @db.VarChar(400)
+  annonce           annonce      @relation(fields: [AnnonceId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "signalannonce_ibfk_2")
+  utilisateurs      utilisateurs @relation(fields: [SignaleurId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "signalannonce_ibfk_1")
+
+  @@id([SignaleurId, AnnonceId])
+  @@index([AnnonceId], map: "AnnonceId")
+}
+
+model utilisateurs {
+  Id            Int             @id @default(autoincrement())
+  Nom           String          @db.VarChar(60)
+  Prenom        String          @db.VarChar(60)
+  Email         String          @unique(map: "Email") @db.VarChar(100)
+  Tel           String?         @unique(map: "Tel") @db.VarChar(30)
+  Login         String          @unique(map: "Login") @db.VarChar(20)
+  Mdp           String          @db.VarChar(200)
+  image         String?         @db.VarChar(200)
+  annonce       annonce[]
+  commentaires  commentaires[]
+  signalannonce signalannonce[]
+}
