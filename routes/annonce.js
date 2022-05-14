@@ -172,4 +172,33 @@ router.post('/add',upload.array('Img_annonce'), async (req, res,next) => {
     }
 })
 
+router.post('/update/:id', async (req, res,next) => {
+    try{
+        const { id }=req.params
+        const updatedAnnonce = await prisma.annonce.update({
+            where: {
+              Id: Number(id),
+            },
+            data: {
+                Titre:req.body.Titre  ,       
+                Descriptionn : req.body.Descriptionn,       
+                Ville : req.body.Ville ,           
+                CategorieNom  : req.body.CategorieNom
+            },
+          })
+        res.status(200).json({
+            success:true,
+            annonce_updated:updatedAnnonce
+        });
+    }
+    catch(error){
+        res.status(500).json({
+            success:false,
+            message:"Une erreur s'est produite lors du traitement de votre demande",
+            details:error.message
+        });
+    }
+})
+
+
 module.exports=router;
