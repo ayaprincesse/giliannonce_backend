@@ -1,12 +1,14 @@
-
+const router = require('express').Router()
 const express = require('express')
 const app = express()
+
 var bodyParser = require('body-parser')
 app.use(express.json())
 app.use(bodyParser.json());       // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
   extended: true
 })); 
+
 const path = require('path')
 //app.use(express.static("./public"))
 //app.use('/', express.static(path.join(__dirname, './public/')));
@@ -17,9 +19,9 @@ app.use(cors())
 app.use('/annonce',require('./routes/annonce'));
 app.use('/categorie',require('./routes/categorie'));
 app.use('/utilisateurs',require('./routes/utilisateurs'));
-/*app.use('/administrateurs',require('./routes/administrateurs'));
+app.use('/administrateurs',require('./routes/administrateurs'));
 app.use('/commentaires',require('./routes/commentaires'));
-app.use('/signal',require('./routes/signal'));*/
+app.use('/signal',require('./routes/signal'));
 
 //***************************************************test part*******************************************
 app.get('/test', function(req, res,next){
@@ -42,9 +44,6 @@ app.get('/test', function(req, res,next){
     });*/
 });
 //***************************************************end test part*******************************************
-app.get("/api", (req, res) =>
-{
-    res.json({"users": ["user1","user2","user3"]})
-})
 
+module.exports = router;
 app.listen(3001);

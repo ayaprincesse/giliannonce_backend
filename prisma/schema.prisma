@@ -26,8 +26,8 @@ model annonce {
   Ville           String          @db.VarChar(60)
   CategorieNom    String          @db.VarChar(60)
   ProprietaireId  Int
-  categorie       categorie       @relation(fields: [CategorieNom], references: [Nom], onDelete: NoAction, onUpdate: NoAction, map: "annonce_ibfk_2")
-  utilisateurs    utilisateurs    @relation(fields: [ProprietaireId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "annonce_ibfk_1")
+  categorie       categorie       @relation(fields: [CategorieNom], references: [Nom], onDelete: Cascade, onUpdate: NoAction, map: "annonce_ibfk_2")
+  utilisateurs    utilisateurs    @relation(fields: [ProprietaireId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "annonce_ibfk_1")
   commentaires    commentaires[]
   imagesannonce   imagesannonce[]
   signalannonce   signalannonce[]
@@ -48,8 +48,8 @@ model commentaires {
   Contenu       String        @db.VarChar(200)
   UtilisateurId Int?
   AnnonceId     Int?
-  annonce       annonce?      @relation(fields: [AnnonceId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "commentaires_ibfk_2")
-  utilisateurs  utilisateurs? @relation(fields: [UtilisateurId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "commentaires_ibfk_1")
+  annonce       annonce?      @relation(fields: [AnnonceId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "commentaires_ibfk_2")
+  utilisateurs  utilisateurs? @relation(fields: [UtilisateurId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "commentaires_ibfk_1")
 
   @@index([AnnonceId], map: "AnnonceId")
   @@index([UtilisateurId], map: "UtilisateurId")
@@ -59,7 +59,7 @@ model imagesannonce {
   Id        Int     @id @default(autoincrement())
   image     String? @db.VarChar(200)
   AnnonceId Int
-  annonce   annonce @relation(fields: [AnnonceId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "imagesannonce_ibfk_1")
+  annonce   annonce @relation(fields: [AnnonceId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "imagesannonce_ibfk_1")
 
   @@index([AnnonceId], map: "AnnonceId")
 }
@@ -68,8 +68,8 @@ model signalannonce {
   SignaleurId       Int
   AnnonceId         Int
   DescriptionRaison String       @db.VarChar(400)
-  annonce           annonce      @relation(fields: [AnnonceId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "signalannonce_ibfk_2")
-  utilisateurs      utilisateurs @relation(fields: [SignaleurId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "signalannonce_ibfk_1")
+  annonce           annonce      @relation(fields: [AnnonceId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "signalannonce_ibfk_2")
+  utilisateurs      utilisateurs @relation(fields: [SignaleurId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "signalannonce_ibfk_1")
 
   @@id([SignaleurId, AnnonceId])
   @@index([AnnonceId], map: "AnnonceId")

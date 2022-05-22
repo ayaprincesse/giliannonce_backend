@@ -57,7 +57,7 @@ router.get('/:id', async (req, res,next) => {
                     select:{
                         image:true
                     }
-                }
+                },
             }
     }); 
         res.status(200).json({
@@ -138,7 +138,7 @@ router.get('/motcle/:terme', async (req, res,next) => {
 
 
 //create annonce
-router.post('/add',upload.array('Img_annonce'), async (req, res,next) => {
+router.post('/',upload.array('Img_annonce'), async (req, res,next) => {
     try{
         const annonce_added=await prisma.annonce.create({
             data:{
@@ -172,7 +172,8 @@ router.post('/add',upload.array('Img_annonce'), async (req, res,next) => {
     }
 })
 
-router.post('/update/:id', async (req, res,next) => {
+//update annonce infos
+router.patch('/:id', async (req, res,next) => {
     try{
         const { id }=req.params
         const updatedAnnonce = await prisma.annonce.update({
@@ -200,5 +201,25 @@ router.post('/update/:id', async (req, res,next) => {
     }
 })
 
-
+//delete annonce
+router.delete('/:id', async (req, res,next) => {
+    try{
+        const { id }=req.params
+        await prisma.annonce.delete({
+            where: {
+              Id: Number(id),
+            },
+          })
+        res.status(200).json({
+            success:true,
+        });
+    }
+    catch(error){
+        res.status(500).json({
+            success:false,
+            message:"Une erreur s'est produite lors du traitement de votre demande",
+            details:error.message
+        });
+    }
+})
 module.exports=router;
