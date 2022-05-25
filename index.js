@@ -8,10 +8,8 @@ app.use(bodyParser.json());       // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
   extended: true
 })); 
+app.use(express.static("public"))
 
-const path = require('path')
-//app.use(express.static("./public"))
-//app.use('/', express.static(path.join(__dirname, './public/')));
 
 const cors = require("cors")
 app.use(cors())

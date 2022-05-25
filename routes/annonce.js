@@ -43,6 +43,26 @@ router.get('/', async (req, res,next) => {
     }
 })
 
+//get toutes les villes
+router.get('/villes', async (req, res,next) => {
+    try{
+        const villes=await prisma.annonce.Ville.findMany({
+            }
+        );
+        res.status(200).json({
+            success:true,
+            list_villes:villes
+        });
+    }
+    catch(error){
+        res.status(500).json({
+            success:false,
+            message:"Une erreur s'est produite lors du traitement de votre demande",
+            details:error.message
+        });
+    }
+})
+
 //get 1 annonce par id
 router.get('/:id', async (req, res,next) => {
     try{
@@ -73,6 +93,7 @@ router.get('/:id', async (req, res,next) => {
         });
     }
 })
+
 
 //get annonces by categorie : recherche
 router.get('/categorie/:nom', async (req, res,next) => {
