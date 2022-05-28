@@ -34,7 +34,7 @@ router.post('/', async (req, res,next) => {
                 Tel: req.body.Tel,
                 Login: req.body.Login,
                 Mdp: hashedPassword,
-                //image:req.file.filename
+                image:"Img_categorie-1652782531900"
             }
         })
         res.status(200).json({
