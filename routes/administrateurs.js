@@ -4,6 +4,8 @@ const prisma = new PrismaClient()
 const bcrypt = require('bcrypt');
 const multer  = require('multer');
 const path = require('path')
+const helper=require('./helpers/authVerify.js');
+const jwt = require('jsonwebtoken');
 //! Use of Multer
 var storage = multer.diskStorage({
     destination: (req, file, callBack) => {
@@ -17,10 +19,44 @@ var storage = multer.diskStorage({
 var upload = multer({
     storage: storage
 });
+//get admins 
+router.get('/',helper.verifyJWT, async (req, res,next) => {
+    try{
+        if(req.RoleUserConnected!="admin"){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+}
+        const admins=await prisma.administrateurs.findMany({
+        })
+        res.status(200).json({
+            success:true,
+            list_admins:admins
+        });
+    }
+    catch(error){
+        res.status(500).json({
+            success:false,
+            message:"Une erreur s'est produite lors du traitement de votre demande",
+            details:error.message
+        });
+    }
+})
 
 //add admin
 router.post('/', async (req, res,next) => {
     try{
+        {/*}
+        if(req.RoleUserConnected!="admin"){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+        */
+}
         //hash password
         const hashedPassword = await bcrypt.hashSync(req.body.Mdp,10);
         const admin_added= await prisma.administrateurs.create({
@@ -48,10 +84,18 @@ router.post('/', async (req, res,next) => {
 })
 
 //update admin
-router.patch('/:id', async (req, res,next) => {
+router.patch('/:id',helper.verifyJWT, async (req, res,next) => {
     try{
-        const hashedPassword= await bcrypt.hashSync(req.body.Mdp,10);
         const { id }=req.params
+        if(req.RoleUserConnected!="admin" || req.IdUserConnected!=id){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+}
+        const hashedPassword= await bcrypt.hashSync(req.body.Mdp,10);
+        
         const updatedadmin = await prisma.administrateurs.update({
             where: {
               Id: Number(id),
@@ -81,9 +125,17 @@ router.patch('/:id', async (req, res,next) => {
 
 
 //update profile image du admin
-router.patch('/updatephoto/:id', upload.single('img_profil'), async (req, res,next) => {
+router.patch('/updatephoto/:id', upload.single('img_profil'),helper.verifyJWT, async (req, res,next) => {
     try{
-        const { id }=req.params
+        const { id }=req.params;
+        if(req.RoleUserConnected!="admin" || req.IdUserConnected!=id){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+        }
+        
         const updatedadmin = await prisma.administrateurs.update({
             where: {
               Id: Number(id),
@@ -107,10 +159,17 @@ router.patch('/updatephoto/:id', upload.single('img_profil'), async (req, res,ne
 })
 
 //get admin  par id
-router.get('/:id', async (req, res,next) => {
+router.get('/:id',helper.verifyJWT, async (req, res,next) => {
     try{
-        
-       const { id }=req.params
+        const { id }=req.params;
+        if(req.RoleUserConnected!="admin" || req.IdUserConnected!=id){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+        }
+       
        const admin=await prisma.administrateurs.findUnique({
             where: {
               Id: Number(id),
@@ -131,8 +190,15 @@ router.get('/:id', async (req, res,next) => {
 })
 
 //delete admin
-router.delete('/:id', async (req, res,next) => {
+router.delete('/:id',helper.verifyJWT, async (req, res,next) => {
     try{
+        if(req.RoleUserConnected!="admin" ){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+}
         const { id }=req.params
         await prisma.administrateurs.delete({
             where: {
@@ -151,4 +217,54 @@ router.delete('/:id', async (req, res,next) => {
         });
     }
 })
+
+
+//login admin
+router.post('/login', async (req, res,next) => {
+    try{
+        const admin=await prisma.administrateurs.findUnique({
+            where:{
+                Login:req.body.Login
+            },
+        })
+        if(admin==null){
+            res.status(400).json({
+                success:false,
+                message:"Username incorrect",
+            });
+        }
+        else{
+            let isPasswordCorrect=await bcrypt.compare(req.body.Mdp.toString(),admin.Mdp);
+            if(isPasswordCorrect) {
+                const token=jwt.sign(
+                    {id:admin.Id,role:"admin"}, 
+                    "jwtMySecretKey", 
+                    { expiresIn: '1d' }
+                );
+                res.status(200).json({
+                    success:true,
+                    message:"connexion réussie",
+                    token:token,
+                    admin_logged:admin
+                });
+            }
+            else{
+                res.status(400).json({
+                    success:false,
+                    message:"Mot de passe incorrect",
+                });
+            }
+        }
+       
+    }
+    catch(error){
+        res.status(500).json({
+            success:false,
+            message:"Une erreur s'est produite lors du traitement de votre demande",
+            details:error.message
+        });
+    }
+})
+
+
 module.exports=router;

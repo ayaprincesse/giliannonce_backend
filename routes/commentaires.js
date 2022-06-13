@@ -1,7 +1,7 @@
 const router = require('express').Router()
 const { PrismaClient } = require("@prisma/client")
 const prisma = new PrismaClient()
-
+const helper=require('./helpers/authVerify.js');
 //get comments par annonce 
 router.get('/:annonceid', async (req, res,next) => {
     try{
@@ -14,14 +14,15 @@ router.get('/:annonceid', async (req, res,next) => {
                 utilisateurs: {
                     select:{
                         Nom:true,
-                        Prenom:true
+                        Prenom:true,
+                        image:true,
                     }
                 }
             },
         });
         res.status(200).json({
             success:true,
-            list_comments:comments
+            listcomments:comments
         });
     }
     catch(error){
@@ -35,8 +36,15 @@ router.get('/:annonceid', async (req, res,next) => {
 
 
 //create comment
-router.post('/', async (req, res,next) => {
+router.post('/',helper.verifyJWT, async (req, res,next) => {
     try{
+        if(req.RoleUserConnected!="user" ){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+        }
             const comment_added=await prisma.commentaires.create({
                 data:{
                     Contenu: req.body.Contenu,
@@ -59,30 +67,5 @@ router.post('/', async (req, res,next) => {
 })
 
 
-//doesnt work
-/*
-router.post('/add', async (req, res,next) => {
-    try{
-        const comment=await prisma.commentaires.create({
-            data:{
-                Contenu:req.body.Contenu,       
-                UtilisateurId : req.body.UtilisateurId,
-                AnnonceId  : req.body.AnnonceId    
-            }
-        })
-        res.status(200).json({
-            success:true,
-            comment_added:comment
-        });
-    }
-    catch(error){
-        res.status(500).json({
-            success:false,
-            message:"Une erreur s'est produite lors du traitement de votre demande",
-            details:error.message
-        });
-    }
-})
-*/
 
 module.exports = router;

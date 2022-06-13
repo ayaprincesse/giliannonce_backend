@@ -3,6 +3,7 @@ const { PrismaClient } = require("@prisma/client")
 const prisma = new PrismaClient()
 const multer  = require('multer');
 const path = require('path')
+const helper=require('./helpers/authVerify.js');
 //! Use of Multer
 var storage = multer.diskStorage({
     destination: (req, file, callBack) => {
@@ -18,8 +19,15 @@ var upload = multer({
 });
 
 //create categorie
-router.post('/add', upload.single('Img_categorie'), async (req, res,next) => {
+router.post('/add', upload.single('Img_categorie'),helper.verifyJWT, async (req, res,next) => {
     try{
+        if(req.RoleUserConnected!="admin"){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+        }
             const categorie_added=await prisma.categorie.create({
                 data:{
                     Nom:req.body.Nom,
@@ -43,6 +51,7 @@ router.post('/add', upload.single('Img_categorie'), async (req, res,next) => {
 //get all categories avec nb annonces dans chacune
 router.get('/', async (req, res,next) => {
     try{
+
         const categories=await prisma.categorie.findMany({
             include:{
                 _count: {
@@ -67,9 +76,16 @@ router.get('/', async (req, res,next) => {
 })
 
 //update cat img
-router.patch('/updateimg/:id', upload.single('Img_categorie'), async (req, res,next) => {
+router.patch('/updateimg/:id', upload.single('Img_categorie'),helper.verifyJWT, async (req, res,next) => {
     try{
-        const { id }=req.params
+        const { id }=req.params;
+        if(req.RoleUserConnected!="admin"){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+        }
         const updatedcat = await prisma.categorie.update({
             where: {
               Id: Number(id),
@@ -93,9 +109,16 @@ router.patch('/updateimg/:id', upload.single('Img_categorie'), async (req, res,n
 })
 
 //update cat
-router.patch('/:id', async (req, res,next) => {
+router.patch('/:id',helper.verifyJWT, async (req, res,next) => {
     try{
         const { id }=req.params;
+        if(req.RoleUserConnected!="admin"){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+        }
         const categorie=await prisma.categorie.findUnique({
             where: {
                 Id: Number(id),

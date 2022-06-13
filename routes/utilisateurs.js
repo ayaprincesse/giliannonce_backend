@@ -3,7 +3,10 @@ const { PrismaClient } = require("@prisma/client")
 const prisma = new PrismaClient()
 const bcrypt = require('bcrypt');
 const multer  = require('multer');
-const path = require('path')
+const path = require('path');
+const jwt = require('jsonwebtoken');
+const helper=require('./helpers/authVerify.js');
+
 //! Use of Multer
 var storage = multer.diskStorage({
     destination: (req, file, callBack) => {
@@ -18,8 +21,7 @@ var upload = multer({
     storage: storage
 });
 
-//create Utilisateur
-//req = request
+//create Utilisateur : créer un compte
 // red.body = contenu de request
 //res = response
 router.post('/', async (req, res,next) => {
@@ -53,10 +55,17 @@ router.post('/', async (req, res,next) => {
 
 
 //update user
-router.patch('/:id', async (req, res,next) => {
+router.patch('/:id',helper.verifyJWT, async (req, res,next) => {
     try{
         const hashedPassword= await bcrypt.hashSync(req.body.Mdp,10);
-        const { id }=req.params
+        const { id }=req.params;
+        if(req.RoleUserConnected!="user" || req.IdUserConnected!=id){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+       }
         const updateduser = await prisma.utilisateurs.update({
             where: {
               Id: Number(id),
@@ -88,7 +97,14 @@ router.patch('/:id', async (req, res,next) => {
 //update profile image du user
 router.patch('/updatephoto/:id', upload.single('img_profil'), async (req, res,next) => {
     try{
-        const { id }=req.params
+        const { id }=req.params;
+        /*if(req.RoleUserConnected!="user" || req.IdUserConnected!=id){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+       }*/
         const updateduser = await prisma.utilisateurs.update({
             where: {
               Id: Number(id),
@@ -112,10 +128,16 @@ router.patch('/updatephoto/:id', upload.single('img_profil'), async (req, res,ne
 })
 
 //get utilisateur  par id
-router.get('/:id', async (req, res,next) => {
+router.get('/:id',helper.verifyJWT, async (req, res,next) => {
     try{
-        
-       const { id }=req.params
+       const { id }=req.params;
+       if(req.RoleUserConnected!="user" || req.IdUserConnected!=id){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+       }
        const utilisateur=await prisma.utilisateurs.findUnique({
             where: {
               Id: Number(id),
@@ -134,4 +156,77 @@ router.get('/:id', async (req, res,next) => {
         });
     }
 })
+
+//getuserNumber par son id
+router.get('/tel/:id', async (req, res,next) => {
+    try{
+        const { id }=req.params;
+        const utilisateur=await prisma.utilisateurs.findUnique({
+             where: {
+               Id: Number(id),
+             }
+     }); 
+         res.status(200).json({
+             success:true,
+             utilisateur:utilisateur
+         });
+     }
+     catch(error){
+         res.status(500).json({
+             success:false,
+             message:"Une erreur s'est produite lors du traitement de votre demande",
+             details:error.message
+         });
+     }
+})
+
+
+//login user
+router.post('/login', async (req, res,next) => {
+    try{
+        const user=await prisma.utilisateurs.findUnique({
+            where:{
+                Login:req.body.Login
+            },
+        })
+        if(user==null){
+            res.status(400).json({
+                success:false,
+                message:"Username incorrect",
+            });
+        }
+        else{
+            let isPasswordCorrect=await bcrypt.compare(req.body.Mdp.toString(),user.Mdp);
+            if(isPasswordCorrect) {
+                const token=jwt.sign(
+                    {id:user.Id,role:"user"}, 
+                    "jwtMySecretKey", 
+                    { expiresIn: '5h' }
+                );
+                res.status(200).json({
+                    success:true,
+                    message:"connexion réussie",
+                    token:token,
+                    user_logged:user
+                });
+            }
+            else{
+                res.status(400).json({
+                    success:false,
+                    message:"Mot de passe incorrect",
+                });
+            }
+        }
+       
+    }
+    catch(error){
+        res.status(500).json({
+            success:false,
+            message:"Une erreur s'est produite lors du traitement de votre demande",
+            details:error.message
+        });
+    }
+})
+
+
 module.exports=router;

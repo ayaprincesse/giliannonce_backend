@@ -1,11 +1,23 @@
 const router = require('express').Router()
 const { PrismaClient } = require("@prisma/client")
 const prisma = new PrismaClient()
+const helper=require('./helpers/authVerify.js');
 
 //get signal with titre de lannonce signalé et data du user signaleur
-router.get('/', async (req, res,next) => {
+router.get('/:idannonce',helper.verifyJWT,  async (req, res,next) => {
     try{
+        const { idannonce }=req.params;
+        if(req.RoleUserConnected!="admin"){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+        }
         const signals=await prisma.signalannonce.findMany({
+            where: {
+                AnnonceId: Number(idannonce),
+            },
             include:{
                 annonce: {
                     select:{
@@ -36,9 +48,15 @@ router.get('/', async (req, res,next) => {
 })
 
 //create
-//doesnt work
-router.post('/', async (req, res,next) => {
+router.post('/',helper.verifyJWT, async (req, res,next) => {
     try{
+        if(req.RoleUserConnected!="user" ){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+        }
         const signal=await prisma.signalannonce.create({
             data:{      
                 SignaleurId: parseInt(req.body.SignaleurId),      

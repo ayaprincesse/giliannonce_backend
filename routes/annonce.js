@@ -3,6 +3,8 @@ const { PrismaClient } = require("@prisma/client")
 const prisma = new PrismaClient()
 const multer  = require('multer');
 const path = require('path')
+const helper=require('./helpers/authVerify.js');
+
 var storage = multer.diskStorage({
     destination: (req, file, callBack) => {
         callBack(null, './public/images/annonces/')    
@@ -25,6 +27,11 @@ router.get('/', async (req, res,next) => {
                         image:true
                     },
                     take: 1,
+                },
+                _count: {
+                    select: {
+                        signalannonce:true
+                    }
                 }
             },
             }
@@ -111,6 +118,22 @@ router.get('/:id', async (req, res,next) => {
                         image:true
                     }
                 },
+                utilisateurs:{
+                    select:{
+                        Tel:true
+                    }
+                },
+                commentaires:{
+                    select:{
+                        Contenu:true,
+                        utilisateurs:true
+                    },
+                },
+                _count: {
+                    select: {
+                        signalannonce:true
+                    }
+                }
             }
     }); 
         res.status(200).json({
@@ -190,10 +213,51 @@ router.get('/motcle/:terme', async (req, res,next) => {
     }
 })
 
-
+//get annonce par proprietaire id 
+router.get('/proprietaire/:id',helper.verifyJWT, async (req, res,next) => {
+    try{    
+        const { id }=req.params
+        if(req.RoleUserConnected!="user" || req.IdUserConnected!=id ){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+}    
+       const annonce=await prisma.annonce.findMany({
+            where: {
+              ProprietaireId: Number(id),
+            },
+            include:{
+                imagesannonce: {
+                    select:{
+                        image:true
+                    },
+                } }
+            }); 
+        res.status(200).json({
+            success:true,
+            annonce:annonce
+        });
+    }
+    catch(error){
+        res.status(500).json({
+            success:false,
+            message:"Une erreur s'est produite lors du traitement de votre demande",
+            details:error.message
+        });
+    }
+})
 //create annonce
-router.post('/',upload.array('Img_annonce'), async (req, res,next) => {
+router.post('/',upload.array('Img_annonce'),helper.verifyJWT, async (req, res,next) => {
     try{
+        if(req.RoleUserConnected!="user" ){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+        }
         const annonce_added=await prisma.annonce.create({
             data:{
                 Titre:req.body.Titre  ,       
@@ -227,9 +291,21 @@ router.post('/',upload.array('Img_annonce'), async (req, res,next) => {
 })
 
 //update annonce infos
-router.patch('/:id', async (req, res,next) => {
+router.patch('/:id',helper.verifyJWT, async (req, res,next) => {
     try{
-        const { id }=req.params
+        const { id }=req.params;
+        const annonce=await prisma.annonce.findUnique({
+            where: {
+              Id: Number(id),
+            },
+        }); 
+        if(req.RoleUserConnected!="user" || req.IdUserConnected!=annonce.ProprietaireId){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+        }              
         const updatedAnnonce = await prisma.annonce.update({
             where: {
               Id: Number(id),
@@ -256,9 +332,23 @@ router.patch('/:id', async (req, res,next) => {
 })
 
 //delete annonce
-router.delete('/:id', async (req, res,next) => {
+router.delete('/:id',helper.verifyJWT, async (req, res,next) => {
     try{
-        const { id }=req.params
+        const { id }=req.params;
+        const annonce=await prisma.annonce.findUnique({
+            where: {
+              Id: Number(id),
+            },
+        }); 
+        if((req.RoleUserConnected!="user" || req.IdUserConnected!=annonce.ProprietaireId ) 
+        && (req.RoleUserConnected!="admin" ) ){
+            res.status(401).json({
+                success:false,
+                message:"Vous n'êtes pas autorisé à faire cette action"
+            });
+            return;
+        } 
+
         await prisma.annonce.delete({
             where: {
               Id: Number(id),
@@ -276,4 +366,6 @@ router.delete('/:id', async (req, res,next) => {
         });
     }
 })
+
+
 module.exports=router;
