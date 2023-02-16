@@ -65,7 +65,7 @@ router.patch('/:id',helper.verifyJWT, async (req, res,next) => {
                 message:"Vous n'êtes pas autorisé à faire cette action"
             });
             return;
-       }
+        }
         const updateduser = await prisma.utilisateurs.update({
             where: {
               Id: Number(id),
